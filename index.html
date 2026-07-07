@@ -117,8 +117,56 @@
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fadeInUp { animation: fadeInUp 0.4s ease-out; }
 
+        /* 인쇄 전용 리포트 헤더 (화면에서는 숨김) */
+        .print-report-header { display: none; }
+
         /* 인쇄 전용 스타일 */
         @media print {
+            /* 리포트 헤더 표시 */
+            .print-report-header {
+                display: block !important;
+                margin: 0 0 1.25rem 0 !important;
+            }
+            .print-header-inner {
+                display: flex !important;
+                justify-content: space-between;
+                align-items: flex-end;
+                gap: 1rem;
+                padding-bottom: 0.75rem;
+                border-bottom: 3px solid #1e293b;
+            }
+            .print-header-title {
+                font-size: 1.5rem;
+                font-weight: 800;
+                color: #0f172a;
+                letter-spacing: -0.02em;
+                margin: 0;
+            }
+            .print-header-date {
+                font-size: 0.8rem;
+                color: #64748b;
+                margin: 0.35rem 0 0 0;
+                font-weight: 500;
+            }
+            .print-header-badges {
+                display: flex !important;
+                gap: 0.5rem;
+                flex-wrap: wrap;
+                justify-content: flex-end;
+            }
+            .print-header-badge {
+                display: inline-block;
+                padding: 0.35rem 0.85rem;
+                border-radius: 0.5rem;
+                background: #eef2ff !important;
+                border: 1px solid #c7d2fe;
+                color: #4338ca !important;
+                font-size: 0.9rem;
+                font-weight: 700;
+                white-space: nowrap;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
             body { background: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             
             /* 숨길 요소들 (헤더, 사이드바, 데이터 테이블, 파일 업로드 숨김) */
@@ -428,7 +476,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (state.analysisError) {
             dbContainer.innerHTML = `<div class="flex flex-col justify-center items-center h-full bg-red-50 rounded-xl p-6 text-center border border-red-100"><p class="text-2xl font-bold text-red-700">분석 중 오류가 발생했습니다</p><p class="text-lg text-red-600 mt-2">${state.analysisError}</p></div>`;
         } else if (state.isReady) {
-            const { allStudents, activeStatTab, logoSrc } = state; 
+            const { allStudents, activeStatTab, logoSrc, academicInfo } = state; 
             const stats = calculateStats(allStudents, activeStatTab);
 
             const tabsHTML = CONSTANTS.TABS_ORDER.map(tab => { 
@@ -445,6 +493,25 @@ document.addEventListener('DOMContentLoaded', () => {
             const studentsForTable = getFilteredStudents().filter(s => s.scores[activeStatTab] !== null);
             const tableHTML = renderStudentDataTable(getSortedStudents(studentsForTable), allStudents.length);
             
+            // 인쇄 전용 리포트 헤더 (학년도 / 학기 / 학년 / 과목)
+            const printDate = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
+            const printHeaderBadges = [
+                `${academicInfo.year}학년도`,
+                `${academicInfo.semester}학기`,
+                `${academicInfo.grade}학년`,
+                `${academicInfo.subject || '과목 미설정'}`
+            ].map(v => `<span class="print-header-badge">${v}</span>`).join('');
+            const printHeaderHTML = `
+                <div class="print-report-header">
+                    <div class="print-header-inner">
+                        <div>
+                            <h1 class="print-header-title">성적 분포 분석 리포트</h1>
+                            <p class="print-header-date">출력일: ${printDate}</p>
+                        </div>
+                        <div class="print-header-badges">${printHeaderBadges}</div>
+                    </div>
+                </div>`;
+
             const logoUploaderHTML = `<label for="logo-upload" class="cursor-pointer group flex items-center justify-center"><img id="logo-preview" src="${logoSrc || ''}" class="${logoSrc ? '' : 'hidden'} h-10 w-auto object-contain" /><div id="logo-placeholder" class="${logoSrc ? 'hidden' : ''} flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-200 text-slate-400 hover:border-indigo-300 hover:text-indigo-500 bg-white shadow-sm"><span class="text-sm font-semibold">로고</span></div><input id="logo-upload" type="file" accept="image/*" class="hidden" /></label>`;
 
             // 요약 정보 HTML 생성
@@ -492,6 +559,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             dbContainer.innerHTML = `
             <div class="space-y-8 max-w-7xl mx-auto animate-fadeInUp">
+                <!-- 인쇄 전용 리포트 헤더 (화면에서는 숨김) -->
+                ${printHeaderHTML}
+
                 <!-- 상단 탭 및 로고 (인쇄 표시) -->
                 <div class="flex flex-col sm:flex-row justify-between items-center gap-4 bg-white p-3 rounded-2xl border border-slate-200 shadow-sm">
                     <nav class="tab-nav w-full sm:w-auto">${tabsHTML}</nav>
